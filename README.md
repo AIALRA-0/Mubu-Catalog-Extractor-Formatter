@@ -41,4 +41,4 @@
 ![image](https://github.com/user-attachments/assets/e5531089-48f4-4b34-8b42-a272b5762391)
 
 ## 注意事项
-1.Latex支持：幕布导出OPML不带Latex格式，需要手动修复
+1. Latex支持：幕布导出OPML不带Latex格式，需要手动修复
