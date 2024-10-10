@@ -42,7 +42,7 @@ def add_heading_to_opml(opml_path, preserve_formatting, enable_detection):
         cleaned_mubu_text = remove_formatting(mubu_text, preserve_formatting)
 
         # 如果启用了特殊格式检测，且文本中包含 ":" 或 "：" 则处理特殊格式
-        if enable_detection and (':' in text_content or '：' in text_content):
+        if enable_detection and (':' in text_content or '：' in text_content) and ('.' not in text_content.split(':')[0]):
             cleaned_mubu_text = process_special_formatting(text_content)
             outline.set('_mubu_text', cleaned_mubu_text)
             # 不设置 heading 属性
