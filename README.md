@@ -1,8 +1,9 @@
 # 项目简介
 本项目包含两个幕布文档处理功能模块
 - **PDF 目录提取**：从 PDF 中提取目录并保存为支持幕布的 OPML 格式  
+![image](https://github.com/user-attachments/assets/8e745cf4-a479-4567-9352-5593b7c91c22)
 - **OPML 格式化**：格式化原有的幕布 OPML 格式文档  
-![image](https://github.com/user-attachments/assets/02e81fd7-077d-4a11-9f68-fb62163e6940)![image](https://github.com/user-attachments/assets/66b37c6a-63a4-4b2a-8279-1c81c87e7470)
+![image](https://github.com/user-attachments/assets/4b1b2baa-976e-4dd2-9703-1c69a348e6fd)
 
 ## PDF 目录提取模块
 使用方式：运行 `PDF2Mubu.py`  
@@ -38,3 +39,6 @@
 ![image](https://github.com/user-attachments/assets/cc21bc2c-7a7f-4491-b3da-dcea9f29bdd3)
 5. OPML导入：幕布-导入-导入OPML  
 ![image](https://github.com/user-attachments/assets/e5531089-48f4-4b34-8b42-a272b5762391)
+
+## 注意事项
+1.Latex支持：幕布导出OPML不带Latex格式，需要手动修复
