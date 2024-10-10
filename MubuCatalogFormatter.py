@@ -46,6 +46,7 @@ def add_heading_to_opml(opml_path, preserve_formatting, enable_detection):
             cleaned_mubu_text = process_special_formatting(text_content)
             outline.set('_mubu_text', cleaned_mubu_text)
             # 不设置 heading 属性
+            outline.set('_heading', str("4"))
         else:
             # 添加 heading 属性，最多支持 3 个层级
             if level <= 3:
