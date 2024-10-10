@@ -129,7 +129,7 @@ def save_outline_to_opml(outline, pdf_file_name, include_page_numbers, max_level
 
 # 判断是否为PDF文件路径或微信读书网页链接
 def is_wechat_reader_url(path):
-    return path.startswith("https://yd.qq.com/web/reader/") || path.startswith("https://weread.qq.com/web/reader/")
+    return (path.startswith("https://yd.qq.com/web/reader/") || path.startswith("https://weread.qq.com/web/reader/"))
 
 # 主函数
 while True:
