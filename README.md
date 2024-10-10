@@ -26,10 +26,10 @@
 2. 运行 OPML 处理脚本：
 
     ```bash
-    python <opml_script>.py
+    python MubuFormatter.py
     ```
 3. 运行 PDF 处理脚本：
 
     ```bash
-    python <pdf_script>.py
+    python PDF2Mubu.py
     ```
