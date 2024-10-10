@@ -1,128 +1,159 @@
+import requests
+from bs4 import BeautifulSoup
 import os
 import fitz  # PyMuPDF
+from urllib.parse import quote
 
 def escape_mubu_text(text):
-    # 对text进行URL编码，以符合_mubu_text字段的格式
-    return text.replace(" ", "%20").replace("：", "%EF%BC%9A").replace("(", "%28").replace(")", "%29")
+    # 对所有字符进行URL编码，包括中文
+    return quote(text, safe="")
 
-def save_pdf_outline_to_opml(pdf_path, include_page_numbers, max_level, include_heading):  
-    # 打开PDF文件
-    pdf_document = fitz.open(pdf_path)
+def fetch_wechat_reader_outline(url):
+    """从微信读书网页爬取目录，并提取书名"""
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    # 提取书名，位于<head>中的<title>
+    book_title_element = soup.find("title")
+    if book_title_element:
+        book_title = book_title_element.get_text(strip=True).split("-")[0].strip()
+    else:
+        book_title = "未命名书籍"
+
+    # 查找class为readerCatalog的div，不再限定style属性
+    catalog_div = soup.find("div", {"class": "readerCatalog"})
+    if not catalog_div:
+        print("未找到目录，请确认网页内容。")
+        exit
+
+    outline_items = catalog_div.select("li.readerCatalog_list_item")
+    outline = []
     
-    # 提取目录（书签/大纲）
-    outline = pdf_document.get_toc()  # 返回一个列表，每个条目是一个目录项
+    for item in outline_items:
+        # 提取目录标题
+        title_element = item.select_one(".readerCatalog_list_item_title_text")
+        if title_element:
+            title = title_element.get_text(strip=True)
+        else:
+            title = "无标题"
+
+        # 从 item 中获取层级信息，直接从 HTML 中查找 "readerCatalog_list_item_level_"
+        level = 0
+        item_html = str(item)  # 将 item 转为字符串形式
+        if "readerCatalog_list_item_level_" in item_html:
+            # 从字符串中提取层级数字
+            start_index = item_html.index("readerCatalog_list_item_level_") + len("readerCatalog_list_item_level_")
+            level = int(item_html[start_index])
     
-    if not outline:
-        print("该PDF文档没有目录。")
-        return
+        # 微信读书网页没有页码信息，暂定为 0
+        page = 0
+        outline.append((level, title, page))
     
-    # 获取第一级目录项并将其内容放入title中
-    first_level_title = outline[0][1] if outline[0][0] == 1 else "PDF Document"
+    return outline, book_title
+
+
+def save_outline_to_opml(outline, pdf_file_name, include_page_numbers, max_level, include_heading):
+    # 初始化 first_level_title，使用 PDF 文件名作为默认标题
+    pdf_file_name = os.path.basename(pdf_file_name)  # 使用文件名而不是完整路径
+
+    # 查找一级标题，一级标题的层级为 1
+    first_level_titles = [item for item in outline if item[0] == 1]
     
-    # 使用first_level_title作为输出文件名
-    output_opml_path = f"{first_level_title}.opml"  # 输出为 title.opml
-    
-    # 用于跟踪当前目录层级
-    current_level = 0
-    
-    # 打开一个opml文件来写入目录
+    # 如果只有一个一级标题，则使用该标题作为输出的OPML文件名，并将其作为 title 显示
+    if len(first_level_titles) == 1:
+        first_level_title = first_level_titles[0][1]
+        outline = [item for item in outline if item[0] != 1]  # 移除一级标题
+        single_title = True
+    else:
+        # 否则使用 PDF 文件名作为标题，并从一级标题开始计算 heading
+        first_level_title = os.path.splitext(pdf_file_name)[0]
+        single_title = False
+
+    output_opml_path = f"{first_level_title}.opml"
+
+    current_level = 0  # 当前目录层级
+
     with open(output_opml_path, "w", encoding="utf-8") as opml_file:
-        # 写入OPML头部，并将第一级的内容放在<title>标签中
         opml_file.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         opml_file.write('<opml version="2.0">\n')
         opml_file.write('  <head>\n')
-        # 直接写入原始标题内容
-        opml_file.write(f'    <title>{first_level_title}</title>\n')
+        opml_file.write(f'    <title>{first_level_title}</title>\n')  # 确保这里只显示文件名或一级标题
         opml_file.write('  </head>\n')
         opml_file.write('  <body>\n')
-        
-        # 写入目录内容，跳过第一级内容
+    
         for item in outline:
-            level, title, page = item
+            level, title, page = item  # 每个目录项包含 (层级, 标题, 页码)
+            if single_title:
+                level -= 1
             
-            # 跳过第一级，因为它已经被用作标题
-            if level == 1:
-                continue
-            
-            # 如果超过最大层级，不再输出该项
-            if level - 1 > max_level:
-                continue
-            
-            # 如果选择包括页码，添加 (Page X)，否则只输出标题
-            if include_page_numbers:
-                text_to_display = f"{title} (Page {page})"
-            else:
-                text_to_display = title
-            
+            if level > max_level:
+                    continue
+    
+            # 生成要显示的目录文本
+            text_to_display = f"{title} (Page {page})" if include_page_numbers else title
             mubu_text = escape_mubu_text(text_to_display)
-            
-            # 添加heading属性，最多支持3个层级
-            heading_attr = f' _heading="{level - 1}"' if include_heading and level - 1 <= 3 else ''
-            
-            # 如果当前层级比前一个大，表示进入了一个新的嵌套层级
+
+            # 从start_heading_level 开始进行 heading 格式化，最高到3级标题
+            heading_attr = f' _heading="{level}"' if include_heading and level >= 1 and level <= 3 else ''  # 设置标题格式化
+    
+            # 处理层级间的关系并关闭不必要的 outline 标签
             if level > current_level + 1:
-                indent = "  " * current_level  # 用当前层级的缩进
-            # 如果当前层级比前一个小或相同，结束之前的标签
-            elif level <= current_level + 1:
-                while current_level >= level - 1:
-                    current_level -= 1
+                while current_level < level - 1:
+                    current_level += 1
+                    indent = "  " * current_level
+                    opml_file.write(f'{indent}<outline>\n')
+            
+            elif level <= current_level:
+                while current_level >= level:
                     indent = "  " * current_level
                     opml_file.write(f'{indent}</outline>\n')
-                    
-            # 写入当前的目录项，包含可选的heading属性
-            indent = "  " * (level - 2)  # 调整缩进，使第二级成为第一级
+                    current_level -= 1
+    
+            # 按 HTML 层级进行缩进
+            indent = "  " * (level - 1)
             opml_file.write(f'{indent}<outline text="{text_to_display}" _mubu_text="%3Cspan%3E{mubu_text}%3C/span%3E" _note="" _mubu_note=""{heading_attr}>\n')
-            
-            # 更新当前层级
-            current_level = level - 1
-        
-        # 根据层级补齐关闭标签
+            current_level = level
+    
+        # 关闭所有未结束的 outline 标签
         while current_level > 0:
-            indent = "  " * (current_level - 1)
+            indent = "  " * current_level
             opml_file.write(f'{indent}</outline>\n')
             current_level -= 1
-        
-        # 结束OPML文件
+    
         opml_file.write('  </body>\n')
         opml_file.write('</opml>\n')
+    
+    print(f"目录已保存到 {output_opml_path}")
 
-    print(f"PDF目录已保存到 {output_opml_path}")
 
-# 输入PDF文件路径
+
+# 判断是否为PDF文件路径或微信读书网页链接
+def is_wechat_reader_url(path):
+    return path.startswith("https://yd.qq.com/web/reader/")
+
+# 主函数
 while True:
-    pdf_path = input("请输入PDF文件的绝对路径（支持拖拽）：").strip().strip('"').strip("'")
+    path = input("请输入PDF文件/微信读书网页的路径（支持拖拽）：").strip().strip('"').strip("'")
 
-    # 检查文件是否存在
-    if not os.path.exists(pdf_path):
-        print("文件不存在，请检查路径是否正确。")
+    if not os.path.exists(path) and not is_wechat_reader_url(path):
+        print("文件不存在/不是有效的微信读书网页链接，请检查路径是否正确。")
         continue
 
-    # 检查是否为有效的PDF文件
-    try:
-        fitz.open(pdf_path)
-        print("文件有效，开始处理...")
-        break
-    except Exception as e:
-        print(f"无效的PDF文件：{e}")
-        continue
-print("*默认选项请直接回车")
+    if is_wechat_reader_url(path):
+        outline, path = fetch_wechat_reader_outline(path)
+        include_page_numbers = False
+        print("网页链接有效，开始处理...")
+    else:
+        pdf_document = fitz.open(path)
+        outline = pdf_document.get_toc()
+        print("PDF文件有效，开始处理...")
 
-# 询问用户是否要包含页码
-include_page_numbers_input = input("是否包含页码？(Y/N，默认N): ").lower().strip()
-include_page_numbers = include_page_numbers_input == 'y'
+    break
 
-# 询问用户最高目录层级
-max_level_input = input("请输入最高目录层级（最高输出的目录层级，从1开始，默认999）：").strip()
-if max_level_input.isdigit() and int(max_level_input) > 0:
-    max_level = int(max_level_input)
-else:
-    max_level = 999;
+if os.path.exists(path):
+    include_page_numbers = input("是否包含页码？(Y/N，默认N): ").lower().strip() == 'y'
 
-# 询问用户是否需要标题层级格式化
-include_heading_input = input("是否进行标题层级格式化（最高支持H3）？(Y/N，默认Y): ").lower().strip()
-# 除非明确输入 'n'，都将默认启用标题层级格式化
-include_heading = include_heading_input != 'n'
+max_level = int(input("请输入最高目录层级（从1开始，默认999）：").strip() or 999)
+include_heading = input("是否进行标题层级格式化（最高支持H3）？(Y/N，默认Y): ").lower().strip() != 'n'
 
-
-# 保存PDF目录到默认的index.opml文件
-save_pdf_outline_to_opml(pdf_path, include_page_numbers, max_level, include_heading)
+save_outline_to_opml(outline, path, include_page_numbers, max_level, include_heading)
