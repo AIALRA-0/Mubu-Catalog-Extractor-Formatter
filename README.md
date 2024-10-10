@@ -6,15 +6,15 @@
 ![image](https://github.com/user-attachments/assets/4b1b2baa-976e-4dd2-9703-1c69a348e6fd)
 
 ## 目录提取模块
-使用方式：运行 `PDF2Mubu.py`  
+使用方式：运行 `MubuCatalogExtractor.py`  
 此模块主要负责从 `PDF/微信读书链接` 中提取目录，并将目录内容格式化后保存为 OPML 文件格式，具体功能包括：
 1. **目录提取**：提取 `PDF/微信读书链接` 文件中的目录（书签/大纲），并转换为 OPML 文件格式
 2. **页码处理**：根据用户选择，决定是否包含页码信息在生成的 OPML 文件中
 3. **层级限制**：用户可选最高的输出层级
 3. **标题层级**：根据目录层级格式化标题，最多支持 3 层标题格式
 
-## OPML 格式化功能模块
-使用方式：运行 `MubuFormatter.py`  
+## 目录格式化模块
+使用方式：运行 `MubuCatalogFormatter.py`  
 此功能的代码主要负责处理幕布导出的 OPML 文件的格式化，具体包括以下几点：
 1. **格式保留或移除**：根据用户选择，决定是否保留原 OPML 文件中的格式（如粗体、斜体等）
 2. **标题层级添加**：根据 OPML 文件内容，最多支持 3 级标题层级
@@ -29,12 +29,12 @@
 2. 运行 目录提取 处理脚本：
 
     ```bash
-    python PDF2Mubu.py
+    python MubuCatalogExtractor.py
     ```
-3. 运行 OPML 处理脚本：
+3. 运行 目录格式化 处理脚本：
 
     ```bash
-    python MubuFormatter.py
+    python MubuCatalogFormatter.py
     ```
 4. OPML导出：幕布-文档-导出/下载-OPML  
 ![image](https://github.com/user-attachments/assets/cc21bc2c-7a7f-4491-b3da-dcea9f29bdd3)
