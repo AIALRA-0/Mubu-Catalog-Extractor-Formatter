@@ -23,13 +23,14 @@
     ```bash
     pip install -r requirements.txt
     ```
-2. 运行 OPML 处理脚本：
-
-    ```bash
-    python MubuFormatter.py
-    ```
-3. 运行 PDF 处理脚本：
+2. 运行 PDF 处理脚本：
 
     ```bash
     python PDF2Mubu.py
+    ```
+
+3. 运行 OPML 处理脚本：
+
+    ```bash
+    python MubuFormatter.py
     ```
