@@ -1,7 +1,7 @@
 # 项目简介
 本项目包含两个幕布文档处理功能模块
 - **PDF 目录提取**：从 PDF 中提取目录并保存为支持幕布的 OPML 格式  
-- **OPML 格式化**：格式化原有的幕布 OPML 格式文档
+- **OPML 格式化**：格式化原有的幕布 OPML 格式文档  
 ![image](https://github.com/user-attachments/assets/02e81fd7-077d-4a11-9f68-fb62163e6940)![image](https://github.com/user-attachments/assets/66b37c6a-63a4-4b2a-8279-1c81c87e7470)
 
 ## PDF 目录提取模块
